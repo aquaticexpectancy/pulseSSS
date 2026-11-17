@@ -26,7 +26,10 @@
     border: 1px solid currentColor; border-radius: 999px; padding: 1px 7px; vertical-align: 2px; }
   .qr { display: flex; gap: 18px; align-items: center; margin-top: 12px; padding: 14px; border: 1px solid var(--line);
     border-radius: 10px; background: var(--bg); }
-  .qr[hidden] { display: none; }
+  .qr[hidden], .guide[hidden] { display: none; }
+  .guide { margin-top: 12px; padding: 14px 16px 4px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); font-size: 13px; }
+  .guide h3 { margin: 0 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+  .guide ol { margin: 0 0 14px; }
   .qr img { width: 168px; height: 168px; border-radius: 8px; background: #fff; flex: none; }
   .qr ol { margin: 0; }
   .note { font-size: 13px; color: var(--muted); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin: 12px 0 0; }
@@ -51,7 +54,43 @@
       <div class="row" id="phonerow">
         <div><b>pulseSSS Phone (iPhone app)</b>
           <div class="muted" id="phonenote">Your iPhone holds the Air and sends your heart rate, also in the background.</div></div>
-        <div class="btns"><button class="ghost" id="pairbtn">Pair phone</button><button class="ghost" id="phonebtn">Use phone</button></div>
+        <div class="btns"><button class="ghost" id="howbtn">How to</button><button class="ghost" id="pairbtn">Pair phone</button><button class="ghost" id="phonebtn">Use phone</button></div>
+      </div>
+      <div class="guide" id="guide" hidden>
+        <h3>Install (once)</h3>
+        <ol>
+          <li>Run <b>AltServer</b> on this PC as administrator (tray icon, bottom right).</li>
+          <li>Plug the iPhone in with a cable and unlock it. Tray icon → <b>Install AltStore</b> → your iPhone,
+            sign in with your Apple ID.</li>
+          <li>iPhone: Settings → General → <b>VPN &amp; Device Management</b> → your Apple ID → <b>Trust</b>.
+            Then Settings → Privacy &amp; Security → <b>Developer Mode</b> on (the phone restarts).</li>
+          <li>AltStore → <b>Sources</b> → <b>+</b> → paste this, then install <b>pulseSSS Phone</b> (keep the cable in):
+            <div class="url" style="margin-top:6px"><input id="srcurl" readonly
+              value="https://raw.githubusercontent.com/aquaticexpectancy/pulseSSS/main/altstore/source.json"><button id="copysrc">Copy</button></div></li>
+        </ol>
+        <h3>Pair (once)</h3>
+        <ol>
+          <li>Click <b>Pair phone</b> here and scan the code with the iPhone camera. Tap the banner; the app says
+            "paired with forbandelse.com". Allow Bluetooth.</li>
+        </ol>
+        <h3>Leaving the PC</h3>
+        <ol>
+          <li>Click <b>Use phone</b> here (this also lets go of the Air).</li>
+          <li>Open pulseSSS Phone. With Share heart rate on in Google Health, it connects within about 30 seconds.
+            You can lock the phone; it keeps sending. Swiping the app away stops it.</li>
+        </ol>
+        <h3>Back at the PC</h3>
+        <ol>
+          <li>In the app, tap <b>release the air</b>.</li>
+          <li>Here, click <b>Connect Fitbit Air</b>.</li>
+        </ol>
+        <h3>Every week</h3>
+        <ol>
+          <li>Free Apple IDs make the app expire after 7 days. Keep AltServer running and AltStore re-signs it by
+            itself; if it can't find the PC over Wi-Fi, plug the phone in for a moment (or turn on
+            <b>Sync with this iPhone over Wi-Fi</b> in iTunes so it works without the cable).</li>
+          <li>New versions of the app appear as updates in AltStore.</li>
+        </ol>
       </div>
       <div class="qr" id="qrbox" hidden>
         <img id="qrimg" alt="Pairing QR code">
@@ -176,6 +215,14 @@
     if (!paired) { showSource(await pairReq()); showQr(); showSource({ source, pulsoid: hasToken, phone: true }); return; }
     if ($("qrbox").hidden) showQr(); else $("qrbox").hidden = true;
     showSource({ source, pulsoid: hasToken, phone: paired });
+  };
+  $("howbtn").onclick = () => {
+    $("guide").hidden = !$("guide").hidden;
+    $("howbtn").textContent = $("guide").hidden ? "How to" : "Hide how to";
+  };
+  $("copysrc").onclick = async () => {
+    try { await navigator.clipboard.writeText($("srcurl").value); } catch { $("srcurl").select(); document.execCommand("copy"); }
+    $("copysrc").textContent = "Copied"; setTimeout(() => $("copysrc").textContent = "Copy", 1500);
   };
   $("unpair").onclick = async e => { e.preventDefault(); showSource(await pairReq({ unpair: true })); };
   async function saveToken(token) {

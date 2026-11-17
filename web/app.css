@@ -1,0 +1,82 @@
+:root {
+  --bg: #0f1115; --panel: #171a21; --line: #262b35; --text: #e8eaef; --muted: #8b93a3;
+  --accent: #ff3b5c; --ok: #3ddc84; --warn: #f5b942; --bad: #ff5d5d;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+/* Match the overlay's colour scheme so Chrome keeps the embedded preview transparent. */
+iframe { color-scheme: normal; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font: 15px/1.5 "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+}
+main { max-width: 1320px; margin: 0 auto; padding: 22px 16px 48px; display: grid; gap: 16px; }
+header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+nav { display: flex; align-items: center; gap: 4px; }
+nav h1 { margin: 0 14px 0 0; font-size: 20px; letter-spacing: .01em; }
+nav h1 span { color: var(--accent); }
+nav a { color: var(--muted); text-decoration: none; padding: 5px 12px; border-radius: 8px; font-weight: 600; font-size: 14px; }
+nav a:hover { color: var(--text); }
+nav a.on { color: var(--text); background: var(--panel); border: 1px solid var(--line); }
+h2 { margin: 0 0 12px; font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; min-width: 0; }
+.muted { color: var(--muted); font-size: 13px; }
+code { font: 12.5px ui-monospace, Consolas, monospace; background: var(--bg); padding: 1px 5px; border-radius: 4px; border: 1px solid var(--line); }
+button {
+  background: var(--accent); color: #fff; border: 0; border-radius: 8px; padding: 7px 14px;
+  font: 600 13px "Segoe UI", system-ui, sans-serif; cursor: pointer;
+}
+button.ghost { background: transparent; color: var(--text); border: 1px solid var(--line); }
+button.ghost:hover { border-color: var(--muted); }
+button.danger { color: var(--bad); }
+button:disabled { opacity: .4; cursor: default; }
+select, input:not([type]), input[type=text], input[type=number] {
+  background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 8px;
+  padding: 6px 9px; font: 13px "Segoe UI", system-ui, sans-serif;
+}
+.url { display: flex; gap: 8px; }
+.url input { flex: 1; min-width: 0; font: 13px ui-monospace, Consolas, monospace; padding: 8px 10px; }
+/* ---- app shell: sidebar + content ---- */
+body.shell { display: grid; grid-template-columns: 208px minmax(0, 1fr); min-height: 100vh; }
+.side {
+  position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; gap: 22px;
+  padding: 20px 12px; background: #0b0d11; border-right: 1px solid var(--line);
+}
+.brand { display: flex; align-items: center; gap: 10px; font-size: 19px; font-weight: 700; padding: 0 8px; }
+.brand svg { width: 24px; height: 24px; color: var(--accent); flex: none; }
+.brand b { color: var(--accent); }
+.sidenav { display: grid; gap: 2px; }
+.sidenav a {
+  display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 8px;
+  color: var(--muted); text-decoration: none; font-weight: 600; font-size: 14px;
+}
+.sidenav a:hover { background: var(--panel); color: var(--text); }
+.sidenav a.on { background: var(--panel); color: var(--text); box-shadow: inset 3px 0 0 var(--accent); }
+.sidenav svg { width: 18px; height: 18px; flex: none; }
+.side-status { margin-top: auto; display: grid; gap: 10px; padding: 0 6px; }
+.mini-bpm { font-size: 34px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; transition: opacity .3s; }
+.mini-bpm small { font-size: 11px; color: var(--accent); margin-left: 5px; letter-spacing: .1em; }
+.side .pill { justify-self: start; font-size: 12px; }
+body.shell main { margin: 0 auto; width: 100%; }
+.pagehead { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; min-height: 34px; }
+.pagehead h1 { margin: 0; font-size: 22px; font-weight: 700; }
+@media (max-width: 760px) {
+  body.shell { grid-template-columns: 1fr; }
+  .side { position: static; height: auto; flex-direction: row; align-items: center; flex-wrap: wrap;
+    padding: 10px 12px; gap: 12px; border-right: 0; border-bottom: 1px solid var(--line); }
+  .brand span { display: none; }
+  .sidenav { display: flex; }
+  .sidenav a span { display: none; }
+  .side-status { margin: 0 0 0 auto; display: flex; align-items: center; padding: 0; }
+  .mini-bpm { font-size: 20px; }
+}
+
+.pill {
+  display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px; border-radius: 999px;
+  background: var(--panel); border: 1px solid var(--line); font-size: 13px;
+}
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.pill[data-s="connected"] .dot { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+.pill[data-s="scanning"] .dot, .pill[data-s="connecting"] .dot, .pill[data-s="waiting"] .dot { background: var(--warn); }
+.pill[data-s="no-token"] .dot, .pill[data-s="bad-token"] .dot, .pill[data-s="no-phone"] .dot { background: var(--bad); }
+.pill[data-s="disconnected"] .dot, .pill[data-s="offline"] .dot { background: var(--bad); }

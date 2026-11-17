@@ -1,0 +1,21 @@
+{
+  // forbandelse.com: the site plus the pulseSSS relay (pulseSSS pushes heart rate, visitors watch).
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "forbandelse-pulse",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-06-01",
+  "routes": [
+    { "pattern": "forbandelse.com/*", "zone_name": "forbandelse.com" }
+  ],
+  "workers_dev": true,
+  "durable_objects": {
+    "bindings": [{ "name": "PULSE", "class_name": "Pulse" }]
+  },
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["Pulse"] }
+  ],
+  "observability": { "enabled": true }
+  // Secrets (not in this file), set with `npx wrangler secret put <NAME>`:
+  //   PUSH_TOKEN     - shared with pulseSSS (settings.json)
+  //   PULSOID_TOKEN  - optional fallback, Pulsoid token with data:heart_rate:read
+}

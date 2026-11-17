@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Pulse overlay</title>
+<!--
+  OBS Browser Source: http://127.0.0.1:8765/overlay              uses the default design
+                      http://127.0.0.1:8765/overlay?design=Neon  a specific design
+  Edit designs at http://127.0.0.1:8765/design - changes show up here live.
+  ?demo=1 shows simulated heart rate; ?demo=auto only while no live reading arrives.
+-->
+<style>
+  html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; }
+  #root { width: 100vw; height: 100vh; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="module">
+  import { mount } from "/static/design.js";
+
+  const q = new URLSearchParams(location.search);
+  const wanted = q.get("design");
+  const demo = q.get("demo");           // "1" always simulate, "auto" when no live data
+  const view = mount(document.getElementById("root"));
+
+  // Old URL options still work as overrides on top of the design.
+  const hex = v => /^[0-9a-f]{6}$/i.test(v || "") ? "#" + v : null;
+  const overrides = {};
+  if (hex(q.get("color"))) overrides.accent = hex(q.get("color"));
+  if (hex(q.get("text"))) overrides.text = hex(q.get("text"));
+  if (+q.get("size") > 0) overrides.size = +q.get("size");
+  if (+q.get("window") > 0) overrides.graphWindow = +q.get("window");
+  if (q.get("graph") === "0") overrides.graph = "none";
+  if (q.get("heart") === "0") overrides.icon = "none";
+  if (q.get("unit") === "0") overrides.unit = "";
+
+  let pinned = null;  // design pushed straight from the designer preview
+  function applyDoc(doc) {
+    if (pinned || !doc) return;
+    const d = doc.designs[wanted] || doc.designs[doc.active];
+    view.setDesign({ ...d, ...overrides });
+  }
+  addEventListener("message", e => {
+    if (e.origin !== location.origin || e.data?.type !== "pulse-design") return;
+    pinned = e.data.design;
+    view.setDesign(pinned);
+  });
+
+  // Live readings vs. simulated ones.
+  const live = [];
+  let lastLive = 0, mode = "live";
+  const sim = { v: 76, target: 80, until: 0, hist: [] };
+  function simStep(t) {
+    if (t > sim.until) { sim.target = 65 + Math.random() * 95; sim.until = t + 8000 + Math.random() * 10000; }
+    sim.v += Math.sign(sim.target - sim.v) * Math.min(Math.abs(sim.target - sim.v), 1.6) + (Math.random() - .5) * 1.5;
+    const v = Math.round(sim.v);
+    sim.hist.push([t, v]);
+    if (sim.hist.length > 600) sim.hist.shift();
+    return v;
+  }
+  if (demo) {
+    const now = Date.now();
+    for (let i = 120; i > 0; i--) simStep(now - i * 1000);
+  }
+  setInterval(() => {
+    if (!demo) return;
+    const fresh = lastLive && Date.now() - lastLive < 6000;
+    if (demo === "auto" && fresh) return;
+    if (mode !== "demo") { mode = "demo"; view.setHistory(sim.hist); }
+    const t = Date.now();
+    view.setReading(simStep(t), t);
+  }, 1000);
+
+  function connect() {
+    const ws = new WebSocket(`ws://${location.host}/ws`);
+    ws.onmessage = e => {
+      const m = JSON.parse(e.data);
+      if (m.type === "hello") {
+        applyDoc(m.designs);
+        live.splice(0, live.length, ...(m.history || []));
+        if (m.t) lastLive = m.t;
+        if (demo !== "1") view.setHistory(live);
+      } else if (m.type === "designs") {
+        applyDoc(m.designs);
+      } else if (m.type === "hr") {
+        live.push([m.t, m.bpm]);
+        if (live.length > 1200) live.shift();
+        lastLive = m.t;
+        if (demo === "1") return;
+        if (mode !== "live") { mode = "live"; view.setHistory(live); }
+        else view.setReading(m.bpm, m.t);
+      }
+    };
+    ws.onclose = () => setTimeout(connect, 2000);
+  }
+  connect();
+</script>
+</body>
+</html>

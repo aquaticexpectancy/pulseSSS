@@ -1,0 +1,21 @@
+# Private: never publish
+settings.json
+settings.tmp
+logs/
+relay/.dev.vars
+*.secret
+
+# Generated / local
+__pycache__/
+*.pyc
+node_modules/
+.wrangler/
+designs.tmp
+hr_test.py
+
+# iOS build output
+ios/build/
+ios/*.xcodeproj/
+*.ipa
+ios/PulsePhone/Info.plist
+ios/Payload/

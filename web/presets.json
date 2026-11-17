@@ -1,0 +1,37 @@
+{
+  "Classic": {},
+  "Neon": {
+    "font": "Orbitron", "weight": 800, "accent": "#00e5ff", "text": "#e9fdff",
+    "graph": "area", "glow": true, "unit": "BPM"
+  },
+  "Card": {
+    "bg": "card", "bgColor": "#0d0f14", "bgOpacity": 0.72, "radius": 16, "border": true,
+    "graph": "area", "font": "Inter", "weight": 800, "accent": "#ff4d6d"
+  },
+  "ECG Monitor": {
+    "font": "Share Tech Mono", "weight": 400, "accent": "#39ff88", "text": "#d8ffe8",
+    "graph": "ecg", "graphPos": "right", "graphWidth": 12, "bg": "card",
+    "bgColor": "#00130a", "bgOpacity": 0.8, "radius": 10, "border": true, "unit": "BPM"
+  },
+  "Minimal": {
+    "icon": "heart-outline", "iconAnim": "none", "graph": "none", "unit": "",
+    "accent": "#ffffff", "font": "Inter", "weight": 600, "size": 0.85, "glow": false
+  },
+  "Pill": {
+    "bg": "pill", "bgColor": "#ffffff", "bgOpacity": 0.95, "text": "#16181d",
+    "accent": "#ff2e63", "graph": "none", "shadow": false, "glow": false,
+    "font": "Montserrat", "weight": 800, "size": 0.8
+  },
+  "Big Number": {
+    "layout": "stack", "align": "center", "font": "Bebas Neue", "weight": 400,
+    "size": 1.6, "graph": "none", "iconAnim": "glow"
+  },
+  "Retro": {
+    "font": "Press Start 2P", "weight": 400, "accent": "#ffcc00", "text": "#ffffff",
+    "graph": "bars", "size": 0.75, "glow": false, "unit": "BPM"
+  },
+  "Zones": {
+    "zones": true, "zone1": 110, "zone2": 140, "accent": "#3ddc84",
+    "zone1Color": "#ffb020", "zone2Color": "#ff2d2d", "graph": "area", "font": "Rajdhani"
+  }
+}

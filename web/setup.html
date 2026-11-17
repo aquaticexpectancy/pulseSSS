@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>pulseSSS setup</title>
+<link rel="stylesheet" href="/static/app.css">
+<style>
+  main { max-width: 900px; }
+  .rows { display: grid; gap: 0; }
+  .row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 0; border-top: 1px solid var(--line); }
+  .row:first-of-type { border-top: 0; padding-top: 0; }
+  .row b { display: block; font-weight: 600; }
+  .row .muted { margin-top: 2px; }
+  .row > div:first-child { min-width: 0; }
+  ol { margin: 0 0 14px; padding-left: 20px; } li { margin-bottom: 6px; }
+  .switch { position: relative; width: 42px; height: 24px; display: inline-block; flex: none; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .switch i { position: absolute; inset: 0; background: var(--line); border-radius: 999px; transition: .2s; cursor: pointer; }
+  .switch i::after { content: ""; position: absolute; width: 18px; height: 18px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: .2s; }
+  .switch input:checked + i { background: var(--accent); }
+  .switch input:checked + i::after { transform: translateX(18px); }
+  .devstate { font-size: 15px; font-weight: 600; }
+  .row .btns { display: flex; gap: 8px; flex: none; }
+  .row.on b::after { content: "in use"; margin-left: 8px; font-size: 11px; font-weight: 600; color: var(--ok);
+    border: 1px solid currentColor; border-radius: 999px; padding: 1px 7px; vertical-align: 2px; }
+  .qr { display: flex; gap: 18px; align-items: center; margin-top: 12px; padding: 14px; border: 1px solid var(--line);
+    border-radius: 10px; background: var(--bg); }
+  .qr img { width: 168px; height: 168px; border-radius: 8px; background: #fff; flex: none; }
+  .qr ol { margin: 0; }
+  .note { font-size: 13px; color: var(--muted); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin: 12px 0 0; }
+</style>
+</head>
+<body>
+<main>
+  <div class="pagehead"><h1>Setup</h1></div>
+
+  <section class="card">
+    <h2>Heart rate</h2>
+    <div class="rows">
+      <div class="row">
+        <div><span class="devstate" id="devstate">–</span><div class="muted" id="devname"></div></div>
+        <button class="ghost" id="reconnect">Reconnect now</button>
+      </div>
+      <div class="row" id="airrow">
+        <div><b>Fitbit Air over Bluetooth</b>
+          <div class="muted">Straight from the Air to this PC. Disconnect frees the Air so your phone can take it.</div></div>
+        <button class="ghost" id="airbtn">Disconnect</button>
+      </div>
+      <div class="row" id="phonerow">
+        <div><b>pulseSSS Phone (iPhone app)</b>
+          <div class="muted" id="phonenote">Your iPhone holds the Air and sends your heart rate, also in the background.</div></div>
+        <div class="btns"><button class="ghost" id="pairbtn">Pair phone</button><button class="ghost" id="phonebtn">Use phone</button></div>
+      </div>
+      <div class="qr" id="qrbox" hidden>
+        <img id="qrimg" alt="Pairing QR code">
+        <div><ol>
+          <li>Install pulseSSS Phone on your iPhone (see the README).</li>
+          <li>Scan this code with the iPhone camera and open it in pulseSSS Phone.</li>
+          <li>Press <b>Use phone</b> here, then connect the Air in the app.</li>
+        </ol>
+        <p class="muted" style="margin:10px 0 0">Anyone with this code can post heart rate to your site. <a href="#" id="unpair">Unpair</a> makes it stop working.</p>
+        </div>
+      </div>
+      <div class="row" id="pulsoidrow">
+        <div><b>Pulsoid</b><div class="muted" id="pulsoidnote">Reads your heart rate from the Pulsoid app on your phone.</div></div>
+        <button class="ghost" id="pulsoidbtn">Use Pulsoid</button>
+      </div>
+    </div>
+    <h2 style="margin-top:14px">Pulsoid token</h2>
+    <div class="url"><input id="ptoken" type="password" autocomplete="off" spellcheck="false" placeholder="Paste your Pulsoid token">
+      <button id="psave">Save</button><button class="ghost" id="pget">Get a token</button><button class="ghost danger" id="premove" hidden>Remove</button></div>
+    <p class="note">Fitbit Air: on your phone, Google Health → Connections → <b>Share heart rate</b>. Each new connection
+      takes up to 30 seconds while the Air gets ready, so pulseSSS stays connected in the background.<br><br>
+      Pulsoid: the Air connects to only one device at a time, so press <b>Use Pulsoid</b> here first (that frees it),
+      then connect the Air in the Pulsoid app. The token comes from pulsoid.net/ui/keys (a Pulsoid BRO feature;
+      the free trial works). forbandelse.com also uses it to show Pulsoid while this PC is off.</p>
+  </section>
+
+  <section class="card" id="webcard">
+    <h2>Website</h2>
+    <div class="rows">
+      <div class="row">
+        <div><b>Show my heart rate on forbandelse.com</b>
+          <div class="muted" id="webstate">Off</div></div>
+        <label class="switch"><input type="checkbox" id="webon"><i></i></label>
+      </div>
+      <div class="row">
+        <div><b>Public page</b><div class="muted" id="webpage">–</div></div>
+        <button class="ghost" id="openpage">Open</button>
+      </div>
+    </div>
+    <h2 style="margin-top:14px">Embed code: paste where it should appear on your site</h2>
+    <div class="url"><input id="embed" readonly><button id="copyembed">Copy</button></div>
+    <p class="note">Anyone visiting your site sees your live heart rate while this is on. pulseSSS only sends readings
+      while someone is actually watching, and visitors see "offline" when it's off or the Air isn't connected.</p>
+  </section>
+
+  <section class="card">
+    <h2>OBS</h2>
+    <ol>
+      <li>In OBS, open <b>Tools → Scripts</b>, click <b>+</b> and choose <code>obs\pulsesss.lua</code> in the pulseSSS folder.</li>
+      <li>Click <b>Add overlay to current scene</b> in the script panel.</li>
+      <li>Optional: edit designs inside OBS with <b>Docks → Custom Browser Docks</b> and the URL
+        <code>http://127.0.0.1:8765/design</code>.</li>
+    </ol>
+    <h2>Overlay URL (manual Browser source, 420 × 200)</h2>
+    <div class="url"><input id="url" readonly><button id="copy">Copy</button></div>
+  </section>
+
+  <section class="card">
+    <h2>App</h2>
+    <div class="rows">
+      <div class="row">
+        <div><b>Start with Windows</b><div class="muted">Runs quietly in the tray when you sign in, so heart rate is ready before OBS opens.</div></div>
+        <label class="switch"><input type="checkbox" id="startup"><i></i></label>
+      </div>
+      <div class="row">
+        <div><b>Logs</b><div class="muted" id="logdir">Heart-rate CSV per day, plus the app log.</div></div>
+        <button class="ghost" id="logs">Open folder</button>
+      </div>
+      <div class="row">
+        <div><b>Quit pulseSSS</b><div class="muted">Closing this window keeps pulseSSS running in the tray. Quit stops it and disconnects the Air.</div></div>
+        <button class="ghost danger" id="quit">Quit</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script type="module" src="/static/shell.js"></script>
+<script type="module">
+  import { LABELS } from "/static/shell.js";
+  const $ = id => document.getElementById(id);
+  const post = (url, body) => fetch(url, { method: body ? "PUT" : "POST", headers: { "Content-Type": "application/json" }, body: body && JSON.stringify(body) });
+
+  $("url").value = location.origin + "/overlay";
+  $("copy").onclick = async () => {
+    try { await navigator.clipboard.writeText($("url").value); } catch { $("url").select(); document.execCommand("copy"); }
+    $("copy").textContent = "Copied"; setTimeout(() => $("copy").textContent = "Copy", 1500);
+  };
+  $("reconnect").onclick = () => post("/api/reconnect");
+
+  // ---------- source: Fitbit Air / Pulsoid / disconnected ----------
+  let source = "air", hasToken = false, paired = false;
+  const setSource = s => fetch("/api/source", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ source: s }) })
+    .then(r => r.ok && r.json()).then(showSource);
+  function showSource(info) {
+    if (!info) return;
+    source = info.source; hasToken = info.pulsoid;
+    $("airrow").classList.toggle("on", source === "air");
+    $("pulsoidrow").classList.toggle("on", source === "pulsoid");
+    $("phonerow").classList.toggle("on", source === "phone");
+    paired = info.phone;
+    $("phonebtn").textContent = source === "phone" ? "Stop phone" : "Use phone";
+    $("phonebtn").disabled = !paired && source !== "phone";
+    $("pairbtn").textContent = paired ? ($("qrbox").hidden ? "Show QR" : "Hide QR") : "Pair phone";
+    if (!paired) $("qrbox").hidden = true;
+    $("airbtn").textContent = source === "air" ? "Disconnect" : "Connect Fitbit Air";
+    $("pulsoidbtn").textContent = source === "pulsoid" ? "Stop Pulsoid" : "Use Pulsoid";
+    $("pulsoidbtn").disabled = !hasToken && source !== "pulsoid";
+    $("pulsoidnote").textContent = hasToken
+      ? "Reads your heart rate from the Pulsoid app on your phone."
+      : "Paste a Pulsoid token below to use it.";
+    $("ptoken").placeholder = hasToken ? "Token saved. Paste a new one to replace it" : "Paste your Pulsoid token";
+    $("premove").hidden = !hasToken;
+    $("reconnect").disabled = source === "off";
+  }
+  $("airbtn").onclick = () => setSource(source === "air" ? "off" : "air");
+  $("pulsoidbtn").onclick = () => setSource(source === "pulsoid" ? "off" : "pulsoid");
+  $("phonebtn").onclick = () => setSource(source === "phone" ? "off" : "phone");
+  const pairReq = body => fetch("/api/phone-pair", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body || {}) })
+    .then(r => r.json());
+  function showQr() { $("qrimg").src = "/api/phone-qr.svg?t=" + Date.now(); $("qrbox").hidden = false; }
+  $("pairbtn").onclick = async () => {
+    if (!paired) { showSource(await pairReq()); showQr(); showSource({ source, pulsoid: hasToken, phone: true }); return; }
+    if ($("qrbox").hidden) showQr(); else $("qrbox").hidden = true;
+    showSource({ source, pulsoid: hasToken, phone: paired });
+  };
+  $("unpair").onclick = async e => { e.preventDefault(); showSource(await pairReq({ unpair: true })); };
+  async function saveToken(token) {
+    const r = await post("/api/settings", { pulsoidToken: token });
+    if (!r.ok) { $("ptoken").value = ""; $("ptoken").placeholder = await r.text(); return; }
+    $("ptoken").value = "";
+    showSource(await r.json());
+  }
+  $("psave").onclick = () => { const v = $("ptoken").value.trim(); if (v) saveToken(v); };
+  $("ptoken").onkeydown = e => { if (e.key === "Enter") $("psave").click(); };
+  $("premove").onclick = () => saveToken("");
+  $("pget").onclick = () => post("/api/open-url", { url: "pulsoid-keys" }).catch(() => {});
+  $("logs").onclick = () => post("/api/open-logs");
+
+  function showWeb(w) {
+    if (!w) return;
+    $("webon").checked = w.enabled;
+    $("webon").disabled = !w.configured;
+    $("webpage").textContent = w.page;
+    $("embed").value = w.embed.replace("\n", "");
+    const text = !w.configured ? "Not set up yet: the relay token is missing."
+      : !w.enabled ? "Off. Visitors see \"offline\"."
+      : w.state === "live" ? (w.viewers ? `Live · ${w.viewers} watching now` : "Live · nobody watching right now")
+      : w.state === "connecting" ? "Connecting to the relay…"
+      : w.state === "error" ? "Problem: " + w.error : "Off";
+    $("webstate").textContent = text;
+  }
+  $("webon").onchange = async () => {
+    const r = await post("/api/settings", { web: { enabled: $("webon").checked } });
+    if (r.ok) showWeb((await r.json()).web);
+  };
+  $("openpage").onclick = () => post("/api/open-page");
+  $("copyembed").onclick = async () => {
+    const v = $("embed").value;
+    try { await navigator.clipboard.writeText(v); } catch { $("embed").select(); document.execCommand("copy"); }
+    $("copyembed").textContent = "Copied"; setTimeout(() => $("copyembed").textContent = "Copy", 1500);
+  };
+
+  async function loadSettings() {
+    const s = await (await fetch("/api/settings")).json();
+    $("startup").checked = s.startup;
+    $("logdir").textContent = s.logDir;
+    showWeb(s.web);
+    showSource(s);
+  }
+  $("startup").onchange = async () => {
+    const r = await post("/api/settings", { startup: $("startup").checked });
+    if (!r.ok) $("startup").checked = !$("startup").checked;
+  };
+
+  let armed = false;
+  $("quit").onclick = async () => {
+    if (!armed) { armed = true; $("quit").textContent = "Click again to quit"; setTimeout(() => { armed = false; $("quit").textContent = "Quit"; }, 4000); return; }
+    $("quit").textContent = "Quitting…";
+    await post("/api/quit");
+  };
+
+  function setDev(s, device) {
+    $("devstate").textContent = LABELS[s] || s;
+    $("devname").textContent = device || "";
+  }
+  (function connect() {
+    const ws = new WebSocket(`ws://${location.host}/ws`);
+    ws.onmessage = e => {
+      const m = JSON.parse(e.data);
+      if (m.type === "hello" || m.type === "status") setDev(m.status, m.device);
+      if (m.type === "hello") { showWeb(m.web); showSource(m); }
+      if (m.type === "source") showSource(m);
+      if (m.type === "web") showWeb(m);
+    };
+    ws.onclose = () => { setDev("offline"); setTimeout(connect, 2000); };
+  })();
+  loadSettings();
+</script>
+</body>
+</html>

@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>pulseSSS designer</title>
+<link rel="stylesheet" href="/static/app.css">
+<style>
+  .designer { display: grid; gap: 16px; grid-template-columns: 210px minmax(0, 1fr) 340px; align-items: start; }
+  @media (max-width: 1380px) { .designer { grid-template-columns: 210px minmax(0, 1fr); } .controls { grid-column: 1 / -1; } }
+  @media (max-width: 960px) { .designer { grid-template-columns: 1fr; } }
+
+  .list { display: grid; gap: 6px; }
+  .item {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%;
+    background: transparent; color: var(--text); border: 1px solid transparent; border-radius: 8px;
+    padding: 8px 10px; font: inherit; text-align: left; cursor: pointer;
+  }
+  .item:hover { background: var(--bg); }
+  .item.sel { background: var(--bg); border-color: var(--accent); }
+  .badge { font-size: 11px; color: var(--accent); border: 1px solid currentColor; border-radius: 999px; padding: 0 7px; }
+  .newrow { display: flex; gap: 6px; margin-top: 10px; }
+  .newrow select { flex: 1; min-width: 0; }
+
+  .stagehead { display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-bottom: 12px; }
+  .name { font-size: 18px; font-weight: 600; background: transparent; border: 1px solid transparent; padding: 4px 6px;
+    border-radius: 6px; color: var(--text); min-width: 0; flex: 1; max-width: 340px; }
+  .name:hover, .name:focus { border-color: var(--line); outline: none; background: var(--bg); }
+  .swatches { display: flex; gap: 6px; align-items: center; }
+  .sw { width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--line); cursor: pointer; padding: 0; }
+  .sw.on { border-color: var(--accent); }
+  .sw[data-bg=checker], .pw[data-bg=checker] { background: repeating-conic-gradient(#2a2e37 0% 25%, #1e2128 0% 50%) 50% / 20px 20px; }
+  .sw[data-bg=dark], .pw[data-bg=dark] { background: #101216; }
+  .sw[data-bg=light], .pw[data-bg=light] { background: #eef0f3; }
+  .sw[data-bg=game], .pw[data-bg=game] { background: linear-gradient(160deg, #3b6ea8 0%, #8fb8d8 45%, #5f8a4a 46%, #3d5e2e 100%); }
+
+  .pw { border-radius: 10px; overflow: hidden; position: relative; padding: 14px; border: 1px solid var(--line); }
+  .frame { width: 420px; height: 200px; transform-origin: 0 0; outline: 1.5px dashed rgba(255,255,255,.35); outline-offset: 0; }
+  .pw[data-bg=light] .frame { outline-color: rgba(0,0,0,.35); }
+  .frame iframe { width: 420px; height: 200px; border: 0; display: block; }
+  .hint { margin: 8px 0 14px; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+
+  .controls { display: grid; gap: 18px; }
+  @media (max-width: 1380px) and (min-width: 961px) { .controls { grid-template-columns: 1fr 1fr; } }
+  .group h2 { margin-bottom: 8px; }
+  .field { display: grid; grid-template-columns: 110px minmax(0, 1fr); align-items: center; gap: 10px; margin-bottom: 8px; }
+  .field > span { color: var(--muted); font-size: 13px; }
+  .field select, .field input[type=text], .field input[type=number] { width: 100%; }
+  .rng { display: flex; align-items: center; gap: 8px; }
+  .rng input { flex: 1; min-width: 0; accent-color: var(--accent); }
+  .rng output { width: 46px; text-align: right; font-variant-numeric: tabular-nums; font-size: 13px; color: var(--muted); }
+  .clr { display: flex; align-items: center; gap: 8px; }
+  .clr input[type=color] { width: 34px; height: 28px; padding: 0; border: 1px solid var(--line); border-radius: 6px; background: none; cursor: pointer; }
+  .clr code { font-size: 12px; }
+  .seg { display: inline-flex; justify-self: start; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; flex-wrap: wrap; }
+  .seg button { background: transparent; color: var(--muted); border-radius: 0; padding: 6px 10px; font-weight: 500; }
+  .seg button.on { background: var(--accent); color: #fff; }
+  .switch { position: relative; width: 38px; height: 22px; display: inline-block; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .switch i { position: absolute; inset: 0; background: var(--line); border-radius: 999px; transition: .2s; cursor: pointer; }
+  .switch i::after { content: ""; position: absolute; width: 16px; height: 16px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: .2s; }
+  .switch input:checked + i { background: var(--accent); }
+  .switch input:checked + i::after { transform: translateX(16px); }
+  .saved { font-size: 12px; color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <div class="pagehead"><h1>Design</h1><span class="saved" id="saved"></span></div>
+
+  <div class="designer">
+    <aside class="card">
+      <h2>Designs</h2>
+      <div class="list" id="list"></div>
+      <div class="newrow"><select id="preset" title="Start from preset"></select><button id="add">New</button></div>
+    </aside>
+
+    <section class="card">
+      <div class="stagehead">
+        <input class="name" id="name" spellcheck="false" title="Rename">
+        <div class="swatches" id="swatches">
+          <span class="muted">Preview on</span>
+          <button class="sw" data-bg="checker" title="Transparent"></button>
+          <button class="sw" data-bg="dark" title="Dark"></button>
+          <button class="sw" data-bg="light" title="Light"></button>
+          <button class="sw" data-bg="game" title="Game scene"></button>
+        </div>
+      </div>
+      <div class="pw" id="pw" data-bg="checker"><div class="frame" id="frame"><iframe id="pv" title="Preview"></iframe></div></div>
+      <p class="muted hint">The dashed box is a 420 × 200 OBS source. When the Air isn't connected, the preview shows simulated heart rate.</p>
+      <div class="url"><input id="url" readonly><button id="copy">Copy</button></div>
+      <p class="muted" id="urlnote" style="margin:0"></p>
+      <div class="actions">
+        <button id="default" class="ghost">Set as default</button>
+        <button id="dup" class="ghost">Duplicate</button>
+        <button id="del" class="ghost danger">Delete</button>
+      </div>
+    </section>
+
+    <section class="card controls" id="controls"></section>
+  </div>
+</main>
+
+<script type="module" src="/static/shell.js"></script>
+<script type="module">
+  import { FONTS, normalize } from "/static/design.js";
+
+  const $ = id => document.getElementById(id);
+  const opts = pairs => pairs.map(p => Array.isArray(p) ? p : [p, p]);
+  const SCHEMA = [
+    { group: "Layout", fields: [
+      { k: "layout", label: "Arrangement", type: "seg", options: [["row", "Side by side"], ["stack", "Stacked"]] },
+      { k: "align", label: "Align", type: "seg", options: [["left", "Left"], ["center", "Center"], ["right", "Right"]] },
+      { k: "size", label: "Size", type: "range", min: 0.4, max: 3, step: 0.05, fmt: v => v.toFixed(2) + "×" },
+    ]},
+    { group: "Text", fields: [
+      { k: "font", label: "Font", type: "select", options: opts(FONTS.map(f => f.name)) },
+      { k: "weight", label: "Weight", type: "select", options: [[400, "Regular"], [600, "Semibold"], [700, "Bold"], [800, "Extra bold"], [900, "Black"]] },
+      { k: "text", label: "Number colour", type: "color" },
+      { k: "unit", label: "Label", type: "text", placeholder: "Empty hides it" },
+      { k: "shadow", label: "Drop shadow", type: "toggle" },
+    ]},
+    { group: "Accent & icon", fields: [
+      { k: "accent", label: "Accent colour", type: "color" },
+      { k: "icon", label: "Icon", type: "select", re: true, options: [["heart", "Heart"], ["heart-outline", "Heart outline"], ["pulse", "Pulse line"], ["none", "None"]] },
+      { k: "iconAnim", label: "Animation", type: "seg", when: d => d.icon !== "none", options: [["beat", "Heartbeat"], ["glow", "Glow"], ["none", "Still"]] },
+      { k: "glow", label: "Glow", type: "toggle" },
+    ]},
+    { group: "Graph", fields: [
+      { k: "graph", label: "Type", type: "select", re: true, options: [["none", "None"], ["line", "Line"], ["area", "Area"], ["bars", "Bars"], ["ecg", "ECG trace"]] },
+      { k: "graphPos", label: "Position", type: "seg", when: d => d.graph !== "none", options: [["below", "Below"], ["right", "Right"]] },
+      { k: "graphWindow", label: "Time shown", type: "range", min: 15, max: 300, step: 5, fmt: v => v + "s",
+        when: d => ["line", "area", "bars"].includes(d.graph) },
+      { k: "graphWidth", label: "Width", type: "range", min: 6, max: 30, step: 0.5, fmt: v => v.toFixed(1), when: d => d.graph !== "none" },
+    ]},
+    { group: "Background", fields: [
+      { k: "bg", label: "Style", type: "seg", re: true, options: [["none", "None"], ["card", "Card"], ["pill", "Pill"]] },
+      { k: "bgColor", label: "Colour", type: "color", when: d => d.bg !== "none" },
+      { k: "bgOpacity", label: "Opacity", type: "range", min: 0, max: 1, step: 0.05, fmt: v => Math.round(v * 100) + "%", when: d => d.bg !== "none" },
+      { k: "radius", label: "Corners", type: "range", min: 0, max: 40, step: 1, fmt: v => v + "px", when: d => d.bg === "card" },
+      { k: "border", label: "Accent border", type: "toggle", when: d => d.bg !== "none" },
+    ]},
+    { group: "Heart-rate zones", fields: [
+      { k: "zones", label: "Change colour", type: "toggle", re: true },
+      { k: "zone1", label: "From (bpm)", type: "number", min: 40, max: 230, when: d => d.zones },
+      { k: "zone1Color", label: "Colour", type: "color", when: d => d.zones },
+      { k: "zone2", label: "From (bpm)", type: "number", min: 40, max: 230, when: d => d.zones },
+      { k: "zone2Color", label: "Colour", type: "color", when: d => d.zones },
+    ]},
+  ];
+
+  let doc = null, sel = null, presets = {};
+  let lastLocalEdit = 0, saveTimer = 0;
+  const cur = () => doc.designs[sel];
+
+  function el(tag, cls, text) {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+
+  function uniqueName(base) {
+    let name = base, i = 2;
+    while (doc.designs[name]) name = `${base} ${i++}`;
+    return name;
+  }
+
+  // ---------- saving ----------
+  function setSaved(text) { $("saved").textContent = text; }
+  function scheduleSave() {
+    lastLocalEdit = Date.now();
+    setSaved("Saving…");
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(save, 300);
+  }
+  async function save() {
+    try {
+      const r = await fetch("/api/designs", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(doc) });
+      if (!r.ok) throw new Error(await r.text());
+      setSaved("Saved · live in OBS");
+    } catch (e) { setSaved("Couldn't save: " + e.message); }
+  }
+
+  // ---------- preview ----------
+  function pushPreview() {
+    $("pv").contentWindow?.postMessage({ type: "pulse-design", design: cur() }, location.origin);
+  }
+  function loadPreview() {
+    $("pv").src = `/overlay?design=${encodeURIComponent(sel)}&demo=auto`;
+  }
+  $("pv").addEventListener("load", pushPreview);
+  new ResizeObserver(() => {
+    const avail = $("pw").clientWidth - 30;
+    const s = Math.min(1, avail / 420);
+    $("frame").style.transform = `scale(${s})`;
+    $("frame").style.marginBottom = `${200 * s - 200}px`;
+    $("frame").style.marginRight = `${420 * s - 420}px`;
+  }).observe($("pw"));
+  let bgChoice = "checker";
+  try { bgChoice = localStorage.getItem("pulse-preview-bg") || "checker"; } catch {}
+  function setBg(b) {
+    bgChoice = b; $("pw").dataset.bg = b;
+    document.querySelectorAll(".sw").forEach(s => s.classList.toggle("on", s.dataset.bg === b));
+    try { localStorage.setItem("pulse-preview-bg", b); } catch {}
+  }
+  document.querySelectorAll(".sw").forEach(s => s.onclick = () => setBg(s.dataset.bg));
+  setBg(bgChoice);
+
+  // ---------- design list ----------
+  function renderList() {
+    const list = $("list");
+    list.innerHTML = "";
+    for (const name of Object.keys(doc.designs)) {
+      const b = el("button", "item" + (name === sel ? " sel" : ""));
+      b.append(el("span", null, name));
+      if (name === doc.active) b.append(el("span", "badge", "default"));
+      b.onclick = () => select(name);
+      list.append(b);
+    }
+  }
+
+  function renderStage() {
+    $("name").value = sel;
+    const url = `${location.origin}/overlay?design=${encodeURIComponent(sel)}`;
+    $("url").value = url;
+    $("urlnote").textContent = sel === doc.active
+      ? `This is the default design, so plain ${location.origin}/overlay shows it too.`
+      : `Plain ${location.origin}/overlay shows the default design (${doc.active}).`;
+    $("default").disabled = sel === doc.active;
+    $("del").disabled = Object.keys(doc.designs).length < 2;
+    resetDelete();
+  }
+
+  function select(name) {
+    sel = name;
+    renderAll();
+    loadPreview();
+  }
+
+  function renderAll() { renderList(); renderStage(); renderControls(); }
+
+  // ---------- controls ----------
+  function change(f, v) {
+    cur()[f.k] = v;
+    pushPreview();
+    scheduleSave();
+    if (f.re) renderControls();
+  }
+
+  function renderControls() {
+    const d = cur();
+    const box = $("controls");
+    box.innerHTML = "";
+    for (const grp of SCHEMA) {
+      const sec = el("div", "group");
+      sec.append(el("h2", null, grp.group));
+      for (const f of grp.fields) {
+        if (f.when && !f.when(d)) continue;
+        const row = el("div", "field");
+        row.append(el("span", null, f.label));
+        row.append(input(f, d[f.k]));
+        sec.append(row);
+      }
+      box.append(sec);
+    }
+  }
+
+  function input(f, v) {
+    if (f.type === "select") {
+      const s = el("select");
+      for (const [val, label] of f.options) {
+        const o = el("option", null, label); o.value = val;
+        if (String(val) === String(v)) o.selected = true;
+        s.append(o);
+      }
+      s.onchange = () => change(f, typeof f.options[0][0] === "number" ? Number(s.value) : s.value);
+      return s;
+    }
+    if (f.type === "seg") {
+      const g = el("div", "seg");
+      for (const [val, label] of f.options) {
+        const b = el("button", val === v ? "on" : "", label);
+        b.onclick = () => { g.querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b)); change(f, val); };
+        g.append(b);
+      }
+      return g;
+    }
+    if (f.type === "range") {
+      const w = el("div", "rng");
+      const r = el("input"); Object.assign(r, { type: "range", min: f.min, max: f.max, step: f.step, value: v });
+      const out = el("output", null, f.fmt(Number(v)));
+      r.oninput = () => { out.textContent = f.fmt(Number(r.value)); change(f, Number(r.value)); };
+      w.append(r, out);
+      return w;
+    }
+    if (f.type === "color") {
+      const w = el("div", "clr");
+      const c = el("input"); Object.assign(c, { type: "color", value: v });
+      const code = el("code", null, v);
+      c.oninput = () => { code.textContent = c.value; change(f, c.value); };
+      w.append(c, code);
+      return w;
+    }
+    if (f.type === "toggle") {
+      const l = el("label", "switch");
+      const c = el("input"); c.type = "checkbox"; c.checked = !!v;
+      c.onchange = () => change(f, c.checked);
+      l.append(c, el("i"));
+      return l;
+    }
+    const t = el("input");
+    t.type = f.type === "number" ? "number" : "text";
+    Object.assign(t, { value: v ?? "", placeholder: f.placeholder || "" });
+    if (f.min != null) Object.assign(t, { min: f.min, max: f.max });
+    t.oninput = () => {
+      if (f.type !== "number") return change(f, t.value);
+      const n = Number(t.value);
+      if (t.value !== "" && Number.isFinite(n)) change(f, n);
+    };
+    return t;
+  }
+
+  // ---------- actions ----------
+  $("add").onclick = () => {
+    const preset = $("preset").value;
+    const name = uniqueName(preset);
+    doc.designs[name] = normalize(presets[preset]);
+    scheduleSave();
+    select(name);
+  };
+  $("dup").onclick = () => {
+    const name = uniqueName(sel + " copy");
+    doc.designs[name] = structuredClone(cur());
+    scheduleSave();
+    select(name);
+  };
+  $("default").onclick = () => { doc.active = sel; scheduleSave(); renderAll(); };
+
+  let delArmed = false;
+  function resetDelete() { delArmed = false; $("del").textContent = "Delete"; }
+  $("del").onclick = () => {
+    if (!delArmed) { delArmed = true; $("del").textContent = "Click again to delete"; return; }
+    delete doc.designs[sel];
+    if (!doc.designs[doc.active]) doc.active = Object.keys(doc.designs)[0];
+    scheduleSave();
+    select(doc.active);
+  };
+
+  $("name").onchange = () => {
+    const to = $("name").value.trim().slice(0, 60);
+    if (!to || to === sel || doc.designs[to]) { $("name").value = sel; return; }
+    const designs = {};
+    for (const [k, v] of Object.entries(doc.designs)) designs[k === sel ? to : k] = v;
+    doc.designs = designs;
+    if (doc.active === sel) doc.active = to;
+    scheduleSave();
+    select(to);
+  };
+  $("name").onkeydown = e => { if (e.key === "Enter") $("name").blur(); };
+
+  $("copy").onclick = async () => {
+    try { await navigator.clipboard.writeText($("url").value); } catch { $("url").select(); document.execCommand("copy"); }
+    $("copy").textContent = "Copied"; setTimeout(() => $("copy").textContent = "Copy", 1500);
+  };
+
+  // ---------- startup ----------
+  presets = await (await fetch("/static/presets.json")).json();
+  for (const name of Object.keys(presets)) {
+    const o = el("option", null, name); o.value = name; $("preset").append(o);
+  }
+
+  function connect() {
+    const ws = new WebSocket(`ws://${location.host}/ws`);
+    ws.onmessage = e => {
+      const m = JSON.parse(e.data);
+      const incoming = m.type === "hello" || m.type === "designs" ? m.designs : null;
+      if (!incoming) return;
+      // Ignore echoes of our own edits; accept changes made in another window (e.g. an OBS dock).
+      if (doc && (Date.now() - lastLocalEdit < 2000 || JSON.stringify(incoming) === JSON.stringify(doc))) return;
+      const first = !doc;
+      doc = incoming;
+      for (const k of Object.keys(doc.designs)) doc.designs[k] = normalize(doc.designs[k]);
+      if (!sel || !doc.designs[sel]) sel = doc.active;
+      renderAll();
+      if (first) loadPreview(); else pushPreview();
+    };
+    ws.onclose = () => { setSaved("App not running"); setTimeout(connect, 2000); };
+    ws.onopen = () => setSaved("");
+  }
+  connect();
+</script>
+</body>
+</html>

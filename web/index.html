@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>pulseSSS</title>
+<link rel="stylesheet" href="/static/app.css">
+<style>
+  main { max-width: 1060px; }
+  .top { display: grid; grid-template-columns: 250px 1fr; gap: 16px; }
+  .now { display: flex; flex-direction: column; justify-content: center; }
+  .big { font-size: 76px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+  .big small { font-size: 16px; color: var(--accent); font-weight: 700; letter-spacing: .1em; margin-left: 6px; }
+  .age { color: var(--muted); font-size: 13px; margin-top: 6px; }
+  .stats { display: flex; gap: 22px; margin-top: 18px; }
+  .stats div { font-variant-numeric: tabular-nums; font-size: 20px; font-weight: 600; }
+  .stats span { display: block; font-size: 12px; color: var(--muted); font-weight: 500; }
+  #chart { width: 100%; height: 210px; display: block; }
+  .grid2 { display: grid; grid-template-columns: 1.2fr 1fr; gap: 16px; }
+  .preview {
+    border-radius: 8px; height: 200px; overflow: hidden; border: 1px solid var(--line);
+    background: repeating-conic-gradient(#20242c 0% 25%, #1a1d24 0% 50%) 50% / 20px 20px;
+  }
+  .preview iframe { border: 0; width: 100%; height: 100%; }
+  .kv { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; font-size: 13px; }
+  .kv dt { color: var(--muted); }
+  .kv dd { margin: 0; word-break: break-all; }
+  .linkbtn { background: none; color: var(--accent); padding: 0; font-weight: 600; }
+  @media (max-width: 860px) { .top, .grid2 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<main>
+  <div class="pagehead"><h1>Live</h1></div>
+
+  <section class="top">
+    <div class="card now">
+      <div class="big"><span id="bpm">--</span><small>BPM</small></div>
+      <div class="age" id="age">No reading yet</div>
+      <div class="stats">
+        <div><span>Min</span><b id="min">--</b></div>
+        <div><span>Avg</span><b id="avg">--</b></div>
+        <div><span>Max</span><b id="max">--</b></div>
+      </div>
+      <div class="muted" style="margin-top:6px">last 10 minutes</div>
+    </div>
+    <div class="card">
+      <h2>Last 5 minutes</h2>
+      <canvas id="chart"></canvas>
+    </div>
+  </section>
+
+  <section class="grid2">
+    <div class="card">
+      <h2>On stream now · default design</h2>
+      <div class="preview"><iframe src="/overlay" title="Overlay preview"></iframe></div>
+    </div>
+    <div class="card">
+      <h2>Session</h2>
+      <dl class="kv">
+        <dt>Device</dt><dd id="device">–</dd>
+        <dt>Status</dt><dd id="status">–</dd>
+        <dt>Connected since</dt><dd id="since">–</dd>
+        <dt>Today's log</dt><dd id="log">–</dd>
+      </dl>
+      <p style="margin:14px 0 0"><button class="ghost" id="reconnect">Reconnect now</button>
+        <button class="ghost" id="logs">Open logs folder</button></p>
+    </div>
+  </section>
+</main>
+
+<script type="module" src="/static/shell.js"></script>
+<script type="module">
+  import { LABELS } from "/static/shell.js";
+  const $ = id => document.getElementById(id);
+  let history = [], lastT = 0, since = null;
+
+  $("reconnect").onclick = () => fetch("/api/reconnect", { method: "POST" });
+  $("logs").onclick = () => fetch("/api/open-logs", { method: "POST" });
+
+  function setStatus(s, device) {
+    $("status").textContent = LABELS[s] || s;
+    if (device) $("device").textContent = device;
+    if (s === "connected" && !since) since = new Date();
+    if (s !== "connected") since = null;
+    $("since").textContent = since ? since.toLocaleTimeString() : "–";
+  }
+
+  function stats() {
+    const cut = Date.now() - 10 * 60 * 1000;
+    const v = history.filter(p => p[0] >= cut).map(p => p[1]);
+    if (!v.length) return;
+    $("min").textContent = Math.min(...v);
+    $("max").textContent = Math.max(...v);
+    $("avg").textContent = Math.round(v.reduce((a, b) => a + b, 0) / v.length);
+  }
+
+  function draw() {
+    const c = $("chart"), dpr = devicePixelRatio || 1, w = c.clientWidth, h = c.clientHeight;
+    if (c.width !== Math.round(w * dpr) || c.height !== Math.round(h * dpr)) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); }
+    const g = c.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+    const span = 5 * 60 * 1000, now = Date.now(), pts = history.filter(p => p[0] >= now - span);
+    const left = 34, bottom = h - 18;
+    let lo = 50, hi = 120;
+    if (pts.length) {
+      lo = Math.min(...pts.map(p => p[1])); hi = Math.max(...pts.map(p => p[1]));
+      lo = Math.floor((lo - 5) / 10) * 10; hi = Math.ceil((hi + 5) / 10) * 10;
+    }
+    const x = t => left + ((t - (now - span)) / span) * (w - left);
+    const y = v => 6 + (1 - (v - lo) / (hi - lo)) * (bottom - 6);
+    g.font = "11px Segoe UI, system-ui"; g.fillStyle = "#8b93a3"; g.strokeStyle = "#262b35"; g.lineWidth = 1;
+    const step = (hi - lo) > 60 ? 20 : 10;
+    for (let v = lo; v <= hi; v += step) {
+      g.beginPath(); g.moveTo(left, y(v)); g.lineTo(w, y(v)); g.stroke();
+      g.fillText(v, 4, y(v) + 4);
+    }
+    ["-5m", "-4m", "-3m", "-2m", "-1m", "now"].forEach((s, i) => {
+      g.fillText(s, Math.min(left + i * (w - left) / 5 - (i === 5 ? 22 : 0), w - 24), h - 3);
+    });
+    if (pts.length < 2) return;
+    g.beginPath();
+    pts.forEach((p, i) => i ? g.lineTo(x(p[0]), y(p[1])) : g.moveTo(x(p[0]), y(p[1])));
+    g.strokeStyle = "#ff3b5c"; g.lineWidth = 2; g.lineJoin = "round"; g.stroke();
+  }
+
+  function tick() {
+    if (lastT) {
+      const s = Math.round((Date.now() - lastT) / 1000);
+      $("age").textContent = s <= 2 ? "Live" : `Last reading ${s}s ago`;
+      $("bpm").style.opacity = s > 6 ? .4 : 1;
+    }
+    draw();
+  }
+  setInterval(tick, 1000);
+  addEventListener("resize", draw);
+
+  function connect() {
+    const ws = new WebSocket(`ws://${location.host}/ws`);
+    ws.onmessage = e => {
+      const m = JSON.parse(e.data);
+      if (m.type === "hello") {
+        history = m.history || []; setStatus(m.status, m.device);
+        $("log").textContent = m.log || "–";
+        if (m.bpm != null) { lastT = m.t; $("bpm").textContent = m.bpm; }
+      } else if (m.type === "status") {
+        setStatus(m.status, m.device);
+      } else if (m.type === "hr") {
+        history.push([m.t, m.bpm]); if (history.length > 1200) history.shift();
+        lastT = m.t; $("bpm").textContent = m.bpm;
+      }
+      stats(); tick();
+    };
+    ws.onclose = () => { setStatus("offline"); setTimeout(connect, 2000); };
+  }
+  connect();
+</script>
+</body>
+</html>

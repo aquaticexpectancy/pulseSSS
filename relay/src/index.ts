@@ -505,13 +505,43 @@ const SITE_HTML = `<!doctype html>
   .beat.is-offline { opacity: 1; }
   .beat.is-offline .pulse-bpm { font-size: 13px; color: var(--dim); }
   footer { padding: 22px 16px; text-align: center; color: var(--faint); font-size: 11px; }
+  .how { font: inherit; color: var(--dim); background: none; border: 0; padding: 4px 6px; margin-left: 6px; cursor: pointer; }
+  .how:hover, .how:focus-visible { color: var(--num); outline: none; text-decoration: underline; }
+  dialog { width: min(440px, calc(100vw - 32px)); max-height: calc(100vh - 48px); overflow: auto; padding: 24px 24px 18px;
+    background: var(--bg); color: var(--num); border: 1px solid var(--faint); font: 13px/1.7 monospace; }
+  dialog::backdrop { background: rgba(0, 0, 0, .7); }
+  dialog h2 { margin: 0 0 8px; font: inherit; color: var(--dim); }
+  dialog h2 + p, dialog p + h2 { margin-top: 0; }
+  dialog p { margin: 0 0 14px; }
+  dialog a { color: var(--num); }
+  dialog .close { display: block; margin: 6px 0 0 auto; padding: 4px 0 4px 8px; }
 </style>
 </head>
 <body>
 <main>
   <span class="beat" data-pulse data-offline="away"></span>
 </main>
-<footer>forbandelse</footer>
+<footer>forbandelse<button class="how" id="how" type="button" aria-haspopup="dialog">how?</button></footer>
+<dialog id="howto" aria-labelledby="howto-title">
+  <h2 id="howto-title">how it works</h2>
+  <p>a fitbit air on my wrist broadcasts my heart rate over bluetooth.</p>
+  <p>at my pc, a small app reads it straight from the air. when i'm away, my phone does it instead and keeps
+    sending in the background.</p>
+  <p>either one sends it to a tiny cloudflare worker, which pushes it to this page live, about every 2 seconds
+    while someone's watching. no pulsoid, no fitbit cloud, nothing in between.</p>
+  <p>"away" means neither is connected right now.</p>
+  <h2>make your own</h2>
+  <p>it's all open source: <a href="https://github.com/aquaticexpectancy/pulseSSS" target="_blank" rel="noopener">github.com/aquaticexpectancy/pulseSSS</a>.
+    works with most bluetooth heart-rate straps and watches that can broadcast heart rate. the readme walks
+    through the desktop app, your own relay and the phone app.</p>
+  <button class="how close" id="howclose" type="button">close</button>
+</dialog>
+<script>
+  const dlg = document.getElementById("howto");
+  document.getElementById("how").onclick = () => dlg.showModal();
+  document.getElementById("howclose").onclick = () => dlg.close();
+  dlg.addEventListener("click", e => { if (e.target === dlg) dlg.close(); });
+</script>
 <script src="/embed.js" defer></script>
 </body>
 </html>

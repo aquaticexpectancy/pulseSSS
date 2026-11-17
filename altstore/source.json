@@ -1,0 +1,38 @@
+{
+  "name": "pulseSSS",
+  "subtitle": "Live heart rate from your Fitbit Air",
+  "description": "The pulseSSS Phone app: holds your Fitbit Air and sends your heart rate to your own relay.",
+  "iconURL": "https://raw.githubusercontent.com/aquaticexpectancy/pulseSSS/main/ios/icon-180.png",
+  "website": "https://github.com/aquaticexpectancy/pulseSSS",
+  "tintColor": "#AAAAAA",
+  "apps": [
+    {
+      "name": "pulseSSS Phone",
+      "bundleIdentifier": "com.forbandelse.pulsesss",
+      "developerName": "forbandelse",
+      "subtitle": "Heart rate to your site and PC, in the background.",
+      "localizedDescription": "Connects to your Fitbit Air over Bluetooth and sends your heart rate to your pulseSSS relay, which shows it on your site and in pulseSSS on your PC. Keeps working in the background. Pair it with the QR code on the pulseSSS Setup page.",
+      "iconURL": "https://raw.githubusercontent.com/aquaticexpectancy/pulseSSS/main/ios/icon-180.png",
+      "tintColor": "#AAAAAA",
+      "category": "utilities",
+      "versions": [
+        {
+          "version": "1.0.1",
+          "buildVersion": "1",
+          "date": "2026-11-17",
+          "localizedDescription": "Build 1.",
+          "downloadURL": "https://github.com/aquaticexpectancy/pulseSSS/releases/download/phone-v1.0.1/pulseSSS-Phone.ipa",
+          "size": 91649,
+          "minOSVersion": "16.0"
+        }
+      ],
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {
+          "NSBluetoothAlwaysUsageDescription": "pulseSSS connects to your Fitbit Air to read your heart rate and send it to your site and PC."
+        }
+      }
+    }
+  ],
+  "news": []
+}
